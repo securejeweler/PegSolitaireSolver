@@ -1,0 +1,123 @@
+/**************************************************************************/
+/*              COPYRIGHT Carnegie Mellon University 2020                 */
+/* Do not post this file or any derivative on a public site or repository */
+/**************************************************************************/
+
+
+/*
+ * Peg solitaire solver
+ *
+ * 15-122 Principles of Imperative Computation */
+
+#use <conio>
+#use <util>
+
+int solve_peg(board B, stack_t Sol, int pegs_left,int closest)
+{
+  if(pegs_left == 1) return 1;
+  stack* temp = all_moves(B); 
+  closest = pegs_left;
+  while(!stack_empty(temp)){
+    move top = (move) pop(temp);
+    make_move(B,top);
+    int test = solve_peg(B,Sol,pegs_left - 1,closest);
+    if(test == 1){
+      push(Sol,(void*) top);
+      return 1;
+    }
+    else{
+      undo_move(B,top);
+      if(test<closest) {
+        closest = test;
+        
+      }
+      
+    }
+  }
+  return pegs_left;
+}
+
+int solve_peg2(board B, stack_t Sol, int pegs_left)
+{
+  if(pegs_left == 1) return 1;
+  stack* temp = all_moves(B); 
+  
+  while(!stack_empty(temp)){
+    move top = (move) pop(temp);
+    make_move(B,top);
+    int test = solve_peg2(B,Sol,pegs_left - 1);
+    if(test == 1){
+      push(Sol,(void*) top);
+      return 1;
+    }
+    else{
+      undo_move(B,top);
+      
+    }
+  }
+  return pegs_left;
+}
+
+int solve_peg3(board B, stack_t Sol, int pegs_left, int* mincounter)
+{
+  if(pegs_left == 1) return 1;
+  stack* temp = all_moves(B); 
+  if(pegs_left < *mincounter){
+    *mincounter = pegs_left;
+  }
+  while(!stack_empty(temp)){
+    move top = (move) pop(temp);
+    make_move(B,top);
+    int test = solve_peg3(B,Sol,pegs_left - 1,mincounter);
+    if(test == 1){
+      push(Sol,(void*) top);
+      return 1;
+    }
+    else{
+      undo_move(B,top);
+      
+    }
+  }
+  return pegs_left;
+
+}
+
+int solve_peg4(board B, stack_t Sol, int pegs_left)
+{
+  if(pegs_left == 1) return 1;
+  stack* temp = all_moves(B); 
+  int minimum = pegs_left;
+  
+  while(!stack_empty(temp)){
+    move top = (move) pop(temp);
+    
+    make_move(B,top);
+    int test = solve_peg4(B,Sol,pegs_left - 1);
+    if(test == 1){
+      push(Sol,(void*) top);
+      return 1;
+    }
+    else{
+      minimum = min(minimum,test);
+      undo_move(B,top);
+      
+    }
+  }
+  return minimum;
+
+}
+
+
+int solve(board B, stack_t Sol)
+//@requires is_board(B);
+//@ensures is_board(B);
+{
+  int count = 0;
+  for(int i = 0; i < 64; i++)
+  {
+    if(B[i] == 1) count += 1;
+  }
+  
+  return solve_peg4(B,Sol,count);
+  
+}

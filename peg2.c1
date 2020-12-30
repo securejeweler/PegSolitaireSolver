@@ -1,0 +1,146 @@
+/**************************************************************************/
+/*              COPYRIGHT Carnegie Mellon University 2020                 */
+/* Do not post this file or any derivative on a public site or repository */
+/**************************************************************************/
+
+
+/*
+ * Peg solitaire solver
+ *
+ * 15-122 Principles of Imperative Computation */
+
+#use <conio>
+#use <util>
+#use <string>
+
+
+struct compact_board {
+  int i1;         // First  half of a compacted board
+  int i2;         // second half of a compacted board
+  int min_pegs;
+  // Add any field you deem useful
+};
+typedef struct compact_board cboard;
+
+
+
+cboard* compress (board B)
+//@requires is_board(B);
+//@ensures is_board(B);
+{
+  cboard* res = alloc(cboard);
+  int overall = 0;
+  int overall2 = 0;
+  for(int i = 0; i < 32; i++){
+    if(B[i] == 1) overall = overall | (1 << i);
+    if(B[i+32] == 1) overall2 = overall2 | (1<<i);
+  }
+  
+  res->i1 = overall;
+  res->i2 = overall2;
+  return res;
+}
+
+/* Client side implementation for hashtables.  See lib/hdict.c1 */
+
+int f(int x)
+{
+  return 1664525 * x + 1013904223;
+}
+
+int cboard_hash(key k)
+//@requires k != NULL;
+//@ensures \result >= 0;
+{
+  cboard* res = (cboard*) k;
+  int res1 = res->i1;
+  int res2 = res->i2;
+  int result = 0;
+  string s = string_fromint((res1+res2));
+  int len = string_length(s);
+  for(int i = 0; i < len; i++)
+  {
+    result = f(result) + char_ord(string_charat(s, i));
+  }
+  return result;
+}
+
+bool cboard_eq(key k1, key k2)
+//@requires k1 != NULL && k2 != NULL;
+{
+  cboard* res1 = (cboard*) k1; 
+  cboard* res2 = (cboard*) k2;
+  int resl1 = res1->i1;
+  int resl2 = res1->i2;
+  int resm1 = res2->i1;
+  int resm2 = res2->i2;
+  return (resl1 == resm1) && (resl2 == resm2);
+}
+
+key cboard_key(entry e)
+//@requires e != NULL;
+//@ensures \result != NULL;
+{
+  return e;
+}
+
+
+/*
+ * Copy here your code from peg1.c1 to continue
+ */
+
+int solve_peg4(board B, stack_t Sol, int pegs_left, hdict* table)
+{
+  if(pegs_left == 1) return 1;
+  stack* temp = all_moves(B); 
+  int minimum = pegs_left;
+  
+  while(!stack_empty(temp)){
+    move top = (move) pop(temp);
+    make_move(B,top);
+    cboard* keyer = compress(B);
+    if(hdict_lookup(table,(void*) keyer) == NULL)
+    {
+      int test = solve_peg4(B,Sol,pegs_left - 1,table);
+      if(test == 1){
+        push(Sol,(void*) top);
+        return 1;
+      }
+      else{
+        undo_move(B,top);
+        keyer->min_pegs = test;
+        hdict_insert(table,(void*) keyer);
+        minimum = min(minimum,test);
+        
+      }
+    }
+    else
+    {
+      undo_move(B,top);
+      cboard* res = (cboard*) hdict_lookup(table,(void*)keyer);
+      minimum = min(res->min_pegs,minimum);
+    }
+    
+  }
+  return minimum;
+
+}
+
+
+int solve(board B, stack_t Sol)
+//@requires is_board(B);
+//@ensures is_board(B);
+{
+  int count = 0;
+  for(int i = 0; i < 64; i++)
+  {
+    if(B[i] == 1) count += 1;
+  }
+  
+  
+  hdict* table = hdict_new(100000,&cboard_key,&cboard_hash,&cboard_eq);
+  int ans = solve_peg4(B,Sol,count,table);
+  
+  return ans;
+
+}

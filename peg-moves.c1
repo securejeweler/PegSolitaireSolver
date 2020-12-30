@@ -1,0 +1,150 @@
+/**************************************************************************/
+/*              COPYRIGHT Carnegie Mellon University 2020                 */
+/* Do not post this file or any derivative on a public site or repository */
+/**************************************************************************/
+
+
+/*
+ * Peg solitaire solver
+ *
+ * 15-122 Principles of Imperative Computation */
+
+#use <conio>
+#use <util>
+
+typedef struct move_header mover;
+typedef mover* move;  // Change me!
+
+struct move_header{
+  int prior;
+  int jumped;
+  int after;
+};
+
+bool is_okay(int from_row, int from_col, int to_row, int to_col)
+{
+  return (abs(from_row-to_row) == 2 && from_col == to_col)
+        || (abs(from_col-to_col) == 2 && from_row == to_row);
+}
+
+move new_move(int from_row, int from_col, int to_row, int to_col)
+//@requires from_row >= 0 && from_row < 8;
+//@requires from_col >= 0 && from_col < 8;
+//@requires to_row >= 0 && to_row < 8;
+//@requires to_col >= 0 && to_col < 8;
+//@requires is_okay(from_row,from_col,to_row,to_col);
+//@ensures \result != NULL;
+//@ensures \result-> prior >= 0 && \result->prior < 64;
+//@ensures \result->jumped >= 0 && \result->jumped < 64;
+//@ensures \result->after >= 0 && \result->after < 64;
+//@ensures \result->prior == from_row * 8 + from_col;
+//@ensures \result->after == to_row * 8 + to_col;
+//@ensures (\result->prior + \result->after)/2 == \result->jumped;
+{
+  int initial_index = (8*from_row) + from_col;
+  int final_index = (8*to_row) + to_col;
+  int jumped_index = (initial_index + final_index)/2;
+  move res = alloc(mover);
+  res->prior = initial_index;
+  res->jumped = jumped_index;
+  res->after = final_index;
+  return res;
+
+}
+
+int row_start(move m)
+{
+  return m->prior/8;
+}
+ 
+
+int col_start(move m){
+  return m->prior - row_start(m) * 8;
+}
+  
+
+int row_end(move m){
+  return m->after/8;
+}
+  
+
+int col_end(move m){
+  return m->after - row_end(m)*8;
+}
+  
+
+void make_move(board B, move m)
+//@requires is_board(B);
+//@requires B[m->prior] == 1;
+//@requires B[m->jumped] == 1;
+//@requires B[m->after] == 0;
+//@requires m->prior >= 0 && m->prior < 64;
+//@requires m->jumped >= 0 && m->jumped < 64;
+//@requires m->after >= 0 && m->after < 64;
+//@ensures is_board(B);
+{
+  B[m->prior] = 0;
+  B[m->jumped] = 0;
+  B[m->after] = 1;
+}
+
+void undo_move(board B, move m)
+//@requires is_board(B);
+//@requires B[m->prior] == 0;
+//@requires B[m->jumped] == 0;
+//@requires B[m->after] == 1;
+//@requires m->prior >= 0 && m->prior < 64;
+//@requires m->jumped >= 0 && m->jumped < 64;
+//@requires m->after >= 0 && m->after < 64;
+//@ensures is_board(B);
+{
+  B[m->prior] = 1;
+  B[m->jumped] = 1;
+  B[m->after] = 0;
+}
+
+
+stack_t all_moves(board B)
+//@requires is_board(B);
+//@ensures is_board(B);
+{
+  stack* s = stack_new();
+  for(int i = 0; i < 64; i++)
+  //@loop_invariant i >= 0;
+  //@loop_invariant i <= 64;
+  {
+    
+    if(B[i] != 0 && B[i] != -1){
+      //@assert B[i] == 1;
+      if((i + 8) < 64 && (i + 16) < 64 && B[i+8] == 1 && B[i+16] == 0){
+        move vert_down = alloc(mover);
+        vert_down->prior = i;
+        vert_down->jumped = i + 8;
+        vert_down->after = i + 16;
+        push(s,(void*) vert_down);
+      }
+      if((i - 8) >= 0 && (i - 16) >=0 && B[i-8] == 1 && B[i-16] == 0){
+        move vert_up = alloc(mover);
+        vert_up->prior = i;
+        vert_up->jumped = i - 8;
+        vert_up->after = i - 16;
+        push(s,(void*) vert_up);
+      }
+      if((i%8!=6 && i%8!=7)  && B[i+1]==1 && B[i+2]==0){
+        move hori_right = alloc(mover);
+        hori_right->prior = i;
+        hori_right->jumped = i + 1;
+        hori_right->after = i + 2;
+        push(s,(void*) hori_right);
+      }
+      if((i%8!=0 && i%8!=1)  && B[i-1]==1 && B[i-2]==0){
+        move hori_left = alloc(mover);
+        hori_left->prior = i;
+        hori_left->jumped = i - 1;
+        hori_left->after = i - 2;
+        push(s,(void*) hori_left);
+      }
+    }
+  }
+  return s;
+}

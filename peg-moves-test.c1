@@ -1,0 +1,46 @@
+/**************************************************************************/
+/*              COPYRIGHT Carnegie Mellon University 2020                 */
+/* Do not post this file or any derivative on a public site or repository */
+/**************************************************************************/
+
+
+/*
+ * Peg solitaire test file for peg-moves.c1
+ *
+ * 15-122 Principles of Imperative Computation
+ */
+
+#use <args>
+#use <conio>
+#use <util>
+
+
+
+// You are welcome to define additional helper functions for your tests
+
+
+int main() {
+  // Creating a board from file
+
+  int[] B_init = alloc_array(int, 8*8);
+
+  args_t args = args_parse();
+  int argc = args->argc;
+  if (argc == 0) {
+    print("Using English board as default\n");
+    english_board(B_init);
+  } else if (argc == 1) {
+    read_board(args->argv[0], B_init, 8*8);
+  }
+
+  print_board(B_init);
+
+
+  // Using B_init, test the functions you wrote in file peg-moves.c1
+
+
+
+
+  println("All tests passed!");
+  return 0;
+}
